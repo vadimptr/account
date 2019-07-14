@@ -56,6 +56,13 @@ func RunWorker() {
 		if inputMessage.Transfer != nil {
 			transfer := inputMessage.Transfer
 			fmt.Printf("%v\n", *transfer)
+			err = services.BalanceProcessor.ProcessTransfer(transfer.FromUser, transfer.ToUser, transfer.Amount)
+			if err != nil {
+				errorHandler(delivery.Body, err.Error())
+				delivery.Ack(false)
+				continue
+			}
+			fmt.Printf("   Message processed.\n")
 		}
 
 		successHandler(inputMessage)
