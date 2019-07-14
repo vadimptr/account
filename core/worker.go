@@ -1,8 +1,9 @@
+
 package core
 
 import (
-	"account-sync/initialize/postgers"
 	"account-sync/initialize/rabbitmq"
+	"account-sync/initialize/services"
 	"account-sync/models"
 	"bytes"
 	"encoding/json"
@@ -19,13 +20,17 @@ func RunWorker() {
 		// deserialize to object
 		inputMessage, err := prepareMessage(delivery.Body)
 		if err != nil {
+			errorHandler(delivery.Body, err.Error())
 			continue
 		}
 
 		// работаем с одним пользователем
 		if inputMessage.SingleUser != nil {
-			var account models.Account
-			postgers.AccountDatabase.First(&account)
+			singleUser := inputMessage.SingleUser
+			err := services.BalanceProcessor.ProcessSingleUser(singleUser.UserName, singleUser.Amount)
+			if err != nil {
+				continue
+			}
 		}
 
 		// работаем с переводом со счета на счет
@@ -39,15 +44,12 @@ func prepareMessage(body []byte) (*models.InputMessage, error) {
 	var err error
 	err = validateMessage(body)
 	if err != nil {
-		errorHandler(body, err.Error())
 		return nil, err
 	}
 
 	var message models.InputMessage
 	err = json.Unmarshal(body, &message)
 	if err != nil {
-		// пакет невозможно распарсить
-		errorHandler(body, err.Error())
 		return nil, err
 	}
 	return &message, nil

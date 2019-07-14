@@ -2,17 +2,18 @@ package validation
 
 type Node struct {
 	Type               []string      `json:"type,omitempty"`
-	AdditionalProperty *bool          `json:"additionalProperties,omitempty"`
+	AdditionalProperty *bool         `json:"additionalProperties,omitempty"`
 	Required           []string      `json:"required,omitempty"`
 	Properties         Properties    `json:"properties,omitempty"`
-	MaxLength          *int           `json:"maxLength,omitempty"`
-	MinLength          *int           `json:"minLength,omitempty"`
+	MaxLength          *int          `json:"maxLength,omitempty"`
+	MinLength          *int          `json:"minLength,omitempty"`
 	Minimum            *int          `json:"minimum,omitempty"`
-	Maximum            *int           `json:"maximum,omitempty"`
+	Maximum            *int          `json:"maximum,omitempty"`
 	Default            *int          `json:"default,omitempty"`
-	Pattern            *string        `json:"pattern,omitempty"`
+	Pattern            *string       `json:"pattern,omitempty"`
 	OneOf              []Node        `json:"oneOf,omitempty"`
-	Format             *string        `json:"format,omitempty"`
+	Not                *Node         `json:"not,omitempty"`
+	Format             *string       `json:"format,omitempty"`
 	Enum               []interface{} `json:"enum,omitempty"`
 	Items              *Node         `json:"items,omitempty"`
 }

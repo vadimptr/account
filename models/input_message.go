@@ -55,6 +55,9 @@ var UserNameValidator = validation.Node{
 
 var AmountValidator = validation.Node{
 	Type: validation.IntegerType,
+	Not: &validation.Node{
+		Enum: []interface{}{0},
+	},
 }
 
 var TransferValidator = validation.Node{
