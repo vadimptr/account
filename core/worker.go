@@ -1,4 +1,3 @@
-
 package core
 
 import (
@@ -8,35 +7,59 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/streadway/amqp"
 	"github.com/xeipuuv/gojsonschema"
 )
 
 func RunWorker() {
-	queue, err := rabbitmq.Listen()
+	var err error
+	var queue <-chan amqp.Delivery
+	queue, err = rabbitmq.Listen()
 	if err != nil {
 		panic("Failed to establish listener")
 	}
-	for delivery := range queue {
+	for {
+		delivery, valid := <- queue
+		if !valid {
+			// выходим если канал закрыт
+			fmt.Println("   Channel closed.")
+			break
+		}
+
+		fmt.Printf("\nRecieved new message.\n")
 		// deserialize to object
-		inputMessage, err := prepareMessage(delivery.Body)
+		var inputMessage *models.InputMessage
+		inputMessage, err = prepareMessage(delivery.Body)
 		if err != nil {
 			errorHandler(delivery.Body, err.Error())
+			delivery.Ack(false)
 			continue
 		}
+
+		fmt.Printf("   Message valid. ")
 
 		// работаем с одним пользователем
 		if inputMessage.SingleUser != nil {
 			singleUser := inputMessage.SingleUser
-			err := services.BalanceProcessor.ProcessSingleUser(singleUser.UserName, singleUser.Amount)
+			fmt.Printf("%v\n", *singleUser)
+			err = services.BalanceProcessor.ProcessSingleUser(singleUser.User, singleUser.Amount)
 			if err != nil {
+				errorHandler(delivery.Body, err.Error())
+				delivery.Ack(false)
 				continue
 			}
+			fmt.Printf("   Message processed.\n")
 		}
 
 		// работаем с переводом со счета на счет
 		if inputMessage.Transfer != nil {
-
+			transfer := inputMessage.Transfer
+			fmt.Printf("%v\n", *transfer)
 		}
+
+		successHandler(inputMessage)
+		delivery.Ack(false)
 	}
 }
 
@@ -92,4 +115,17 @@ func errorHandler(body []byte, reason string) {
 	if err != nil {
 		panic("Can't send output message: " + err.Error())
 	}
+	fmt.Printf("   Pushed response: %s %s\n", outputMessage.Status, reason)
+}
+
+func successHandler(message *models.InputMessage) {
+	outputMessage := models.OutputMessage{
+		Status:          "success",
+		OriginalMessage: message,
+	}
+	err := rabbitmq.EnqueueMessage(&outputMessage)
+	if err != nil {
+		panic("Can't send output message: " + err.Error())
+	}
+	fmt.Printf("   Pushed response: %s\n", outputMessage.Status)
 }

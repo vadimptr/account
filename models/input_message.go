@@ -8,8 +8,8 @@ type InputMessage struct {
 }
 
 type SingleUser struct {
-	UserName string `json:"user_name"`
-	Amount   int    `json:"amount"`
+	User   string `json:"user"`
+	Amount int    `json:"amount"`
 }
 
 type Transfer struct {
@@ -34,22 +34,23 @@ var InputMessageValidator = validation.Node{
 	},
 	Properties: validation.Properties{
 		"single_user": SingleUserValidator,
+		"transfer":    TransferValidator,
 	},
 }
 
 var SingleUserValidator = validation.Node{
 	Type:               validation.ObjectType,
 	AdditionalProperty: &validation.ValueFalse,
-	Required:           []string{"single_user", "amount"},
+	Required:           []string{"user", "amount"},
 	Properties: validation.Properties{
-		"user_name": UserNameValidator,
-		"amount":    AmountValidator,
+		"user":   UserValidator,
+		"amount": AmountValidator,
 	},
 }
 
-var UserNameValidator = validation.Node{
+var UserValidator = validation.Node{
 	Type:      validation.StringType,
-	MinLength: &validation.Value6,
+	MinLength: &validation.Value1,
 	MaxLength: &validation.Value256,
 }
 
@@ -65,8 +66,8 @@ var TransferValidator = validation.Node{
 	AdditionalProperty: &validation.ValueFalse,
 	Required:           []string{"from_user", "to_user", "amount"},
 	Properties: validation.Properties{
-		"from_user": UserNameValidator,
-		"to_user":   UserNameValidator,
+		"from_user": UserValidator,
+		"to_user":   UserValidator,
 		"amount":    PositiveAmountValidator,
 	},
 }
